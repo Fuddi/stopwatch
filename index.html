@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0f14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>StopWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── CSS Variables ─────────────────────────────────────── */
+    :root {
+      --color-bg:           #0d0f14;
+      --color-surface:      #161b24;
+      --color-surface-alt:  #1e2535;
+      --color-border:       #2a3347;
+      --color-accent:       #00e5ff;
+      --color-accent-dim:   #0097a7;
+      --color-success:      #00c853;
+      --color-danger:       #ff3d00;
+      --color-warning:      #ffd600;
+      --color-text-primary: #f0f4ff;
+      --color-text-secondary:#8899bb;
+      --color-text-disabled: #445577;
+
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      --radius-sm:   6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --radius-full: 9999px;
+
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px var(--color-border);
+      --shadow-glow-accent: 0 0 16px rgba(0,229,255,0.25);
+      --shadow-glow-success: 0 0 12px rgba(0,200,83,0.3);
+
+      --font-mono: 'Roboto Mono', 'Courier New', monospace;
+      --font-sans: 'Inter', system-ui, sans-serif;
+    }
+
+    .theme-light {
+      --color-bg:           #f0f4f8;
+      --color-surface:      #ffffff;
+      --color-surface-alt:  #e8edf5;
+      --color-border:       #c8d3e6;
+      --color-accent:       #0077cc;
+      --color-accent-dim:   #005fa3;
+      --color-success:      #00952b;
+      --color-danger:       #d63000;
+      --color-text-primary: #0d1525;
+      --color-text-secondary:#4a5a7a;
+      --color-text-disabled: #9aaabb;
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.1), 0 0 0 1px var(--color-border);
+      --shadow-glow-accent: 0 0 12px rgba(0,119,204,0.2);
+      --shadow-glow-success: 0 0 10px rgba(0,149,43,0.2);
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    input {
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    *:focus-visible {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    *:focus:not(:focus-visible) { outline: none; }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    #header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-4);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      height: 60px;
+    }
+    #header-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    #header-logo svg { color: var(--color-accent); }
+    #header-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-primary);
+    }
+    #header-title span { color: var(--color-accent); }
+    #btn-settings {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      transition: background 0.2s, color 0.2s;
+    }
+    #btn-settings:hover, #btn-settings:active {
+      background: var(--color-surface-alt);
+      color: var(--color-accent);
+    }
+
+    /* ── Timer Hero ────────────────────────────────────────── */
+    #timer-section {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-6) var(--space-4) var(--space-5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+    }
+    #timer-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+    }
+    #timer-display {
+      font-family: var(--font-mono);
+      font-size: clamp(52px, 14vw, 76px);
+      font-weight: 700;
+      color: var(--color-accent);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-shadow: var(--shadow-glow-accent);
+      transition: color 0.3s;
+      user-select: none;
+    }
+    #timer-display.running { color: var(--color-accent); }
+    #timer-display.stopped { color: var(--color-warning); }
+    #timer-controls {
+      display: flex;
+      gap: var(--space-3);
+    }
+    .btn-primary {
+      height: 48px;
+      min-width: 110px;
+      padding: 0 var(--space-5);
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--color-accent);
+      color: #0d0f14;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: var(--shadow-glow-accent);
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary.stop {
+      background: var(--color-warning);
+      box-shadow: 0 0 16px rgba(255,214,0,0.3);
+    }
+    .btn-secondary {
+      height: 48px;
+      min-width: 90px;
+      padding: 0 var(--space-5);
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 2px solid var(--color-border);
+      transition: border-color 0.2s, color 0.2s, transform 0.1s;
+    }
+    .btn-secondary:hover, .btn-secondary:active {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+    .btn-secondary:active { transform: scale(0.96); }
+    .btn-secondary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* ── Add Runner ────────────────────────────────────────── */
+    #add-runner-section {
+      border-bottom: 1px solid var(--color-border);
+    }
+    #add-runner-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+    #add-runner-toggle:hover { background: var(--color-surface-alt); color: var(--color-accent); }
+    #add-runner-toggle svg {
+      transition: transform 0.25s;
+    }
+    #add-runner-toggle.open svg { transform: rotate(180deg); }
+    #add-runner-form-wrap {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease;
+      background: var(--color-surface);
+    }
+    #add-runner-form-wrap.open { max-height: 120px; }
+    #add-runner-form {
+      display: flex;
+      gap: var(--space-2);
+      padding: 0 var(--space-4) var(--space-4);
+    }
+    #runner-name-input {
+      flex: 1;
+      height: 48px;
+      padding: 0 var(--space-4);
+      border-radius: var(--radius-md);
+      border: 2px solid var(--color-border);
+      background: var(--color-surface-alt);
+      color: var(--color-text-primary);
+      font-size: 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #runner-name-input::placeholder { color: var(--color-text-disabled); }
+    #runner-name-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.15);
+      outline: none;
+    }
+    #btn-add-runner {
+      height: 48px;
+      width: 48px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent);
+      color: #0d0f14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: var(--shadow-glow-accent);
+    }
+    #btn-add-runner:active { transform: scale(0.93); }
+
+    /* ── Runner List ───────────────────────────────────────── */
+    #runners-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    #runners-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+    }
+    #runner-count-badge {
+      background: var(--color-surface-alt);
+      border-radius: var(--radius-full);
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-text-secondary);
+    }
+    #runner-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: 0 var(--space-3) var(--space-3);
+    }
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8) var(--space-4);
+      gap: var(--space-3);
+      color: var(--color-text-disabled);
+      text-align: center;
+    }
+    #empty-state svg { opacity: 0.4; }
+    #empty-state p { font-size: 14px; line-height: 1.5; }
+    #empty-state strong { color: var(--color-text-secondary); font-size: 15px; }
+
+    /* ── Runner Card ───────────────────────────────────────── */
+    .runner-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-3) var(--space-3) 0;
+      overflow: hidden;
+      position: relative;
+      transition: opacity 0.3s, box-shadow 0.3s;
+      animation: cardIn 0.25s ease both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .runner-card-accent {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 0 2px 2px 0;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .runner-card[data-status="pending"]  .runner-card-accent { background: var(--color-border); }
+    .runner-card[data-status="running"]  .runner-card-accent { background: var(--color-accent); }
+    .runner-card[data-status="finished"] .runner-card-accent { background: var(--color-success); }
+    .runner-card[data-status="dnf"]      .runner-card-accent { background: var(--color-danger); }
+
+    .runner-bib {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text-secondary);
+      background: var(--color-surface-alt);
+      border-radius: var(--radius-sm);
+      padding: 3px 7px;
+      flex-shrink: 0;
+      min-width: 36px;
+      text-align: center;
+    }
+    .runner-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .runner-name {
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.3s;
+    }
+    .runner-card[data-status="finished"] .runner-name { color: var(--color-text-disabled); }
+    .runner-card[data-status="dnf"]      .runner-name { color: var(--color-text-disabled); }
+    .runner-meta {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+    .runner-finish-time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-success);
+      text-shadow: var(--shadow-glow-success);
+    }
+    .runner-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      flex-shrink: 0;
+    }
+    .btn-finish {
+      height: 44px;
+      padding: 0 var(--space-4);
+      border-radius: var(--radius-full);
+      background: var(--color-accent);
+      color: #0d0f14;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+      box-shadow: var(--shadow-glow-accent);
+      position: relative;
+    }
+    .btn-finish::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--color-accent);
+      opacity: 0;
+      animation: pulse-ring 1.8s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.95); opacity: 0.6; }
+      70%  { transform: scale(1.15); opacity: 0; }
+      100% { opacity: 0; }
+    }
+    .btn-finish:active { transform: scale(0.93); }
+    .btn-finish:disabled {
+      background: var(--color-border);
+      color: var(--color-text-disabled);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .btn-finish:disabled::after { display: none; }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-icon:hover, .btn-icon:active { background: var(--color-surface-alt); color: var(--color-text-primary); }
+    .btn-icon.undo:hover { color: var(--color-warning); }
+    .btn-icon.danger:hover { color: var(--color-danger); }
+
+    .badge-dnf {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--color-danger);
+      background: rgba(255,61,0,0.12);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+    }
+
+    /* ── Results Section ───────────────────────────────────── */
+    #results-section {
+      border-top: 1px solid var(--color-border);
+    }
+    #results-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    #results-toggle:hover { background: var(--color-surface-alt); color: var(--color-success); }
+    #results-toggle svg { transition: transform 0.25s; }
+    #results-toggle.open svg { transform: rotate(180deg); }
+    #results-wrap {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.4s ease;
+      background: var(--color-surface);
+    }
+    #results-wrap.open { max-height: 1200px; }
+    #results-inner { padding: 0 var(--space-4) var(--space-4); }
+
+    #results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: var(--space-4);
+    }
+    #results-table caption {
+      font-size: 11px;
+      color: var(--color-text-disabled);
+      text-align: left;
+      margin-bottom: var(--space-2);
+      caption-side: top;
+    }
+    #results-table th {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      padding: var(--space-2) var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+      text-align: left;
+    }
+    #results-table td {
+      padding: var(--space-2) var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+    #results-table tr:last-child td { border-bottom: none; }
+    .td-rank {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      width: 32px;
+    }
+    .td-rank-1 { color: var(--color-warning); font-size: 14px; }
+    .td-rank-2 { color: #b0b8c8; }
+    .td-rank-3 { color: #c0874a; }
+    .td-name { font-weight: 500; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-time {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--color-success);
+    }
+    .td-gap {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      text-align: right;
+    }
+    .result-row { animation: rowIn 0.2s ease both; }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    #export-buttons {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .btn-export {
+      flex: 1;
+      min-width: 90px;
+      height: 42px;
+      padding: 0 var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 2px solid var(--color-border);
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .btn-export:hover, .btn-export:active {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: rgba(0,229,255,0.05);
+    }
+
+    /* ── Toast ─────────────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom) + 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      pointer-events: none;
+      width: calc(100% - 32px);
+      max-width: 400px;
+    }
+    .toast {
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      animation: toastIn 0.25s ease both;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .toast.out {
+      animation: toastOut 0.25s ease both;
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(12px); }
+    }
+    .toast-icon { flex-shrink: 0; }
+    .toast.success .toast-icon { color: var(--color-success); }
+    .toast.warning .toast-icon { color: var(--color-warning); }
+    .toast.info    .toast-icon { color: var(--color-accent); }
+    .toast.error   .toast-icon { color: var(--color-danger); }
+
+    /* ── Settings Drawer ───────────────────────────────────── */
+    #settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      backdrop-filter: blur(2px);
+    }
+    #settings-overlay.open { display: block; }
+    #settings-drawer {
+      position: fixed;
+      top: 0;
+      right: -320px;
+      width: 300px;
+      max-width: 85vw;
+      height: 100dvh;
+      background: var(--color-surface);
+      border-left: 1px solid var(--color-border);
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+    }
+    #settings-drawer.open { right: 0; }
+    #settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      background: var(--color-surface);
+    }
+    #settings-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    #btn-close-settings {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      transition: background 0.2s, color 0.2s;
+    }
+    #btn-close-settings:hover { background: var(--color-surface-alt); color: var(--color-text-primary); }
+    #settings-body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+    .setting-label { font-size: 14px; font-weight: 500; }
+    .setting-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: background 0.25s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 22px;
+      height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--color-accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .settings-divider { height: 1px; background: var(--color-border); }
+    .btn-danger-full {
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: rgba(255,61,0,0.1);
+      border: 2px solid var(--color-danger);
+      color: var(--color-danger);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-danger-full:active { background: rgba(255,61,0,0.2); transform: scale(0.98); }
+
+    /* ── Reduced motion ────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- Header -->
+    <header id="header">
+      <div id="header-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span id="header-title">Stop<span>Watch</span></span>
+      </div>
+      <button id="btn-settings" aria-label="Open settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Timer Hero -->
+    <section id="timer-section" aria-label="Race timer">
+      <div id="timer-label">Race Timer</div>
+      <output id="timer-display" aria-live="off">00:00.00</output>
+      <div id="timer-controls">
+        <button id="btn-start-stop" class="btn-primary" aria-label="Start timer">START</button>
+        <button id="btn-reset" class="btn-secondary" aria-label="Reset timer" disabled>RESET</button>
+      </div>
+    </section>
+
+    <!-- Add Runner -->
+    <section id="add-runner-section" aria-label="Add runner">
+      <button id="add-runner-toggle" aria-expanded="false" aria-controls="add-runner-form-wrap">
+        <span>+ Add Runner</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="add-runner-form-wrap" role="region">
+        <form id="add-runner-form" autocomplete="off">
+          <input
+            id="runner-name-input"
+            type="text"
+            placeholder="Runner name…"
+            maxlength="40"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="words"
+            spellcheck="false"
+            inputmode="text"
+            aria-label="Runner name"
+          />
+          <button id="btn-add-runner" type="submit" aria-label="Add runner">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Runner List -->
+    <section id="runners-section" aria-label="Runners">
+      <div id="runners-section-header">
+        <span>Runners</span>
+        <span id="runner-count-badge">0</span>
+      </div>
+      <ul id="runner-list" aria-live="polite" aria-label="Runner list"></ul>
+      <div id="empty-state" aria-hidden="false">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <strong>No runners yet</strong>
+        <p>Tap "+ Add Runner" above<br/>to register your athletes.</p>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results-section" aria-label="Results" style="display:none">
+      <button id="results-toggle" aria-expanded="false" aria-controls="results-wrap">
+        <span>Results</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div id="results-wrap" role="region">
+        <div id="results-inner">
+          <table id="results-table">
+            <caption>Finish times — fastest first</caption>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Bib</th>
+                <th scope="col">Name</th>
+                <th scope="col">Time</th>
+                <th scope="col" style="text-align:right">Gap</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+          <div id="export-buttons">
+            <button class="btn-export" id="btn-copy" aria-label="Copy results to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+            <button class="btn-export" id="btn-csv" aria-label="Download results as CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+            <button class="btn-export" id="btn-share" aria-label="Share results" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- #app -->
+
+  <!-- Toast container -->
+  <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- Settings Drawer -->
+  <div id="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings"></div>
+  <div id="settings-drawer">
+    <div id="settings-header">
+      <h2>Settings</h2>
+      <button id="btn-close-settings" aria-label="Close settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="settings-body">
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Light Mode</div>
+          <div class="setting-sub">Switch to light theme</div>
+        </div>
+        <label class="toggle" aria-label="Toggle light mode">
+          <input type="checkbox" id="toggle-light-mode" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Sound</div>
+          <div class="setting-sub">Beep on finish</div>
+        </div>
+        <label class="toggle" aria-label="Toggle finish sound">
+          <input type="checkbox" id="toggle-sound" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <button id="btn-fullscreen" class="btn-secondary" style="width:100%; height:48px; font-size:13px;">
+        Fullscreen Mode
+      </button>
+
+      <div class="settings-divider"></div>
+
+      <button id="btn-reset-session" class="btn-danger-full">
+        Clear All &amp; Reset
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Runner card template -->
+  <template id="runner-card-tpl">
+    <li class="runner-card" data-status="pending">
+      <div class="runner-card-accent"></div>
+      <span class="runner-bib"></span>
+      <div class="runner-info">
+        <span class="runner-name"></span>
+        <span class="runner-meta"></span>
+      </div>
+      <div class="runner-actions"></div>
+    </li>
+  </template>
+
+  <script>
+    'use strict';
+
+    /* ── Utility ──────────────────────────────────────────── */
+    function formatTime(ms) {
+      const totalCs = Math.floor(ms / 10);
+      const cs      = totalCs % 100;
+      const s       = Math.floor(totalCs / 100) % 60;
+      const m       = Math.floor(totalCs / 6000) % 60;
+      const h       = Math.floor(totalCs / 360000);
+      const pad2 = n => String(n).padStart(2, '0');
+      if (h > 0) return `${h}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+      return `${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+    }
+
+    function uid() {
+      return (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : String(Date.now()) + Math.random().toString(36).slice(2);
+    }
+
+    /* ── AppState ─────────────────────────────────────────── */
+    const DEFAULT_STATE = {
+      timer:   { startTime: null, elapsed: 0, running: false },
+      runners: [],
+      nextBib: 1,
+      settings: { darkMode: true, soundEnabled: true }
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('stopwatch_state');
+        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        const s = JSON.parse(raw);
+        // Guard: if page was refreshed mid-run, pause the timer
+        if (s.timer && s.timer.running) {
+          s.timer.running = false;
+          s._recovered = true;
+        }
+        return s;
+      } catch {
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+    }
+
+    function persist() {
+      try { localStorage.setItem('stopwatch_state', JSON.stringify(state)); } catch {}
+    }
+
+    function getElapsed() {
+      if (state.timer.running) {
+        return state.timer.elapsed + (performance.now() - state.timer.startTime);
+      }
+      return state.timer.elapsed;
+    }
+
+    /* ── Web Audio ────────────────────────────────────────── */
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playBeep(freq = 880, duration = 0.12) {
+      if (!state.settings.soundEnabled) return;
+      try {
+        ensureAudio();
+        const osc  = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + duration);
+      } catch {}
+    }
+
+    /* ── Toast ────────────────────────────────────────────── */
+    function showToast(msg, type = 'info', duration = 2800) {
+      const icons = {
+        success: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+        warning: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+        info:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+        error:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+      };
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${msg}</span>`;
+      document.getElementById('toast-container').appendChild(el);
+      const remove = () => {
+        el.classList.add('out');
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+      };
+      const timer = setTimeout(remove, duration);
+      el.addEventListener('click', () => { clearTimeout(timer); remove(); });
+    }
+
+    /* ── Dispatch ─────────────────────────────────────────── */
+    function dispatch(action, payload = {}) {
+      switch (action) {
+
+        case 'START_TIMER':
+          ensureAudio();
+          state.timer.startTime = performance.now();
+          state.timer.running = true;
+          state.runners.forEach(r => { if (r.status === 'pending') r.status = 'running'; });
+          startRaf();
+          break;
+
+        case 'STOP_TIMER':
+          state.timer.elapsed += performance.now() - state.timer.startTime;
+          state.timer.startTime = null;
+          state.timer.running = false;
+          stopRaf();
+          break;
+
+        case 'RESET_TIMER':
+          state.timer = { startTime: null, elapsed: 0, running: false };
+          state.runners.forEach(r => {
+            r.status = 'pending';
+            r.finishTime = null;
+          });
+          stopRaf();
+          break;
+
+        case 'ADD_RUNNER': {
+          const name = (payload.name || '').trim();
+          if (!name) return;
+          state.runners.push({
+            id: uid(),
+            bib: state.nextBib++,
+            name,
+            status: state.timer.running ? 'running' : 'pending',
+            finishTime: null,
+          });
+          break;
+        }
+
+        case 'FINISH_RUNNER': {
+          const r = state.runners.find(x => x.id === payload.id);
+          if (!r || r.status !== 'running') return;
+          r.finishTime = getElapsed();
+          r.status = 'finished';
+          playBeep(880, 0.15);
+          playBeep(1100, 0.08);
+          break;
+        }
+
+        case 'UNDO_FINISH': {
+          const r = state.runners.find(x => x.id === payload.id);
+          if (!r || r.status !== 'finished') return;
+          r.finishTime = null;
+          r.status = state.timer.running ? 'running' : 'pending';
+          break;
+        }
+
+        case 'DNF_RUNNER': {
+          const r = state.runners.find(x => x.id === payload.id);
+          if (!r || r.status === 'finished') return;
+          r.status = 'dnf';
+          r.finishTime = null;
+          break;
+        }
+
+        case 'REMOVE_RUNNER':
+          state.runners = state.runners.filter(x => x.id !== payload.id);
+          break;
+
+        case 'RESET_SESSION':
+          state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+          stopRaf();
+          break;
+
+        case 'TOGGLE_DARK_MODE':
+          state.settings.darkMode = !state.settings.darkMode;
+          break;
+
+        case 'TOGGLE_SOUND':
+          state.settings.soundEnabled = !state.settings.soundEnabled;
+          break;
+      }
+
+      persist();
+      render();
+    }
+
+    /* ── RAF Timer Loop ───────────────────────────────────── */
+    let rafId = null;
+    function startRaf() {
+      if (rafId) return;
+      const tick = () => {
+        document.getElementById('timer-display').textContent = formatTime(getElapsed());
+        if (state.timer.running) rafId = requestAnimationFrame(tick);
+        else rafId = null;
+      };
+      rafId = requestAnimationFrame(tick);
+    }
+    function stopRaf() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    /* ── Render ───────────────────────────────────────────── */
+    function render() {
+      renderTheme();
+      renderTimer();
+      renderRunnerList();
+      renderResults();
+    }
+
+    function renderTheme() {
+      document.body.classList.toggle('theme-light', !state.settings.darkMode);
+      document.getElementById('toggle-light-mode').checked = !state.settings.darkMode;
+      document.getElementById('toggle-sound').checked = state.settings.soundEnabled;
+    }
+
+    function renderTimer() {
+      const { running, elapsed } = state.timer;
+      const display = document.getElementById('timer-display');
+      if (!running) display.textContent = formatTime(elapsed);
+      display.className = running ? 'running' : (elapsed > 0 ? 'stopped' : '');
+
+      const btnStartStop = document.getElementById('btn-start-stop');
+      const btnReset     = document.getElementById('btn-reset');
+
+      if (running) {
+        btnStartStop.textContent = 'STOP';
+        btnStartStop.classList.add('stop');
+        btnStartStop.setAttribute('aria-label', 'Stop timer');
+      } else {
+        btnStartStop.textContent = 'START';
+        btnStartStop.classList.remove('stop');
+        btnStartStop.setAttribute('aria-label', 'Start timer');
+      }
+
+      btnReset.disabled = (elapsed === 0 && !running);
+    }
+
+    function renderRunnerList() {
+      const list      = document.getElementById('runner-list');
+      const empty     = document.getElementById('empty-state');
+      const badge     = document.getElementById('runner-count-badge');
+      const tpl       = document.getElementById('runner-card-tpl');
+      const { runners } = state;
+
+      badge.textContent = runners.length;
+      empty.style.display = runners.length === 0 ? 'flex' : 'none';
+      empty.setAttribute('aria-hidden', runners.length > 0 ? 'true' : 'false');
+
+      // Build map of existing cards by runner id for reuse
+      const existing = {};
+      list.querySelectorAll('.runner-card').forEach(el => {
+        existing[el.dataset.runnerId] = el;
+      });
+
+      const newOrder = runners.map(runner => {
+        let card = existing[runner.id];
+        if (!card) {
+          card = tpl.content.cloneNode(true).querySelector('.runner-card');
+          card.dataset.runnerId = runner.id;
+        }
+        updateCard(card, runner);
+        delete existing[runner.id];
+        return card;
+      });
+
+      // Remove stale cards
+      Object.values(existing).forEach(el => el.remove());
+
+      // Re-order DOM
+      newOrder.forEach(card => list.appendChild(card));
+    }
+
+    function updateCard(card, runner) {
+      card.dataset.status = runner.status;
+
+      const bibEl    = card.querySelector('.runner-bib');
+      const nameEl   = card.querySelector('.runner-name');
+      const metaEl   = card.querySelector('.runner-meta');
+      const actionsEl = card.querySelector('.runner-actions');
+
+      bibEl.textContent  = `#${runner.bib}`;
+      nameEl.textContent = runner.name;
+      nameEl.title       = runner.name;
+
+      if (runner.status === 'finished') {
+        metaEl.innerHTML = `<span class="runner-finish-time">${formatTime(runner.finishTime)}</span>`;
+      } else if (runner.status === 'dnf') {
+        metaEl.innerHTML = `<span class="badge-dnf">DNF</span>`;
+      } else {
+        metaEl.textContent = '';
+      }
+
+      // Rebuild actions
+      actionsEl.innerHTML = '';
+
+      if (runner.status === 'pending' || runner.status === 'running') {
+        const btnFinish = document.createElement('button');
+        btnFinish.className = 'btn-finish';
+        btnFinish.textContent = 'Finish';
+        btnFinish.setAttribute('aria-label', `Record finish time for ${runner.name}`);
+        btnFinish.disabled = runner.status !== 'running';
+        btnFinish.dataset.action = 'finish';
+        btnFinish.dataset.id = runner.id;
+        actionsEl.appendChild(btnFinish);
+
+        // DNF ghost button
+        const btnDnf = document.createElement('button');
+        btnDnf.className = 'btn-icon danger';
+        btnDnf.setAttribute('aria-label', `Mark ${runner.name} as DNF`);
+        btnDnf.dataset.action = 'dnf';
+        btnDnf.dataset.id = runner.id;
+        btnDnf.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        actionsEl.appendChild(btnDnf);
+      }
+
+      if (runner.status === 'finished') {
+        const btnUndo = document.createElement('button');
+        btnUndo.className = 'btn-icon undo';
+        btnUndo.setAttribute('aria-label', `Undo finish for ${runner.name}`);
+        btnUndo.dataset.action = 'undo';
+        btnUndo.dataset.id = runner.id;
+        btnUndo.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.83"/></svg>`;
+        actionsEl.appendChild(btnUndo);
+      }
+
+      if (runner.status === 'dnf') {
+        const btnUndo = document.createElement('button');
+        btnUndo.className = 'btn-icon undo';
+        btnUndo.setAttribute('aria-label', `Restore ${runner.name}`);
+        btnUndo.dataset.action = 'undo-dnf';
+        btnUndo.dataset.id = runner.id;
+        btnUndo.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.83"/></svg>`;
+        actionsEl.appendChild(btnUndo);
+      }
+
+      // Remove runner (always)
+      const btnRemove = document.createElement('button');
+      btnRemove.className = 'btn-icon danger';
+      btnRemove.setAttribute('aria-label', `Remove ${runner.name}`);
+      btnRemove.dataset.action = 'remove';
+      btnRemove.dataset.id = runner.id;
+      btnRemove.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+      actionsEl.appendChild(btnRemove);
+    }
+
+    function renderResults() {
+      const finished = state.runners
+        .filter(r => r.status === 'finished')
+        .sort((a, b) => a.finishTime - b.finishTime);
+
+      const section = document.getElementById('results-section');
+      section.style.display = finished.length > 0 ? 'block' : 'none';
+
+      const tbody = document.getElementById('results-body');
+      tbody.innerHTML = '';
+
+      const leader = finished[0];
+      finished.forEach((r, i) => {
+        const gap = i === 0 ? '—' : `+${formatTime(r.finishTime - leader.finishTime)}`;
+        const rankClass = i === 0 ? 'td-rank td-rank-1'
+                        : i === 1 ? 'td-rank td-rank-2'
+                        : i === 2 ? 'td-rank td-rank-3'
+                        : 'td-rank';
+        const rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
+        const tr = document.createElement('tr');
+        tr.className = 'result-row';
+        tr.style.animationDelay = `${i * 0.04}s`;
+        tr.innerHTML = `
+          <td class="${rankClass}">${rankIcon}</td>
+          <td class="td-rank" style="color:var(--color-text-secondary)">#${r.bib}</td>
+          <td class="td-name" title="${r.name}">${r.name}</td>
+          <td class="td-time">${formatTime(r.finishTime)}</td>
+          <td class="td-gap">${gap}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Show share button if available
+      document.getElementById('btn-share').style.display =
+        (typeof navigator.share === 'function') ? 'flex' : 'none';
+    }
+
+    /* ── Export Helpers ───────────────────────────────────── */
+    function buildResultsText() {
+      const finished = state.runners
+        .filter(r => r.status === 'finished')
+        .sort((a, b) => a.finishTime - b.finishTime);
+      const leader = finished[0];
+      const header = `Rank  Bib   Name                 Time         Gap\n${'─'.repeat(52)}`;
+      const rows = finished.map((r, i) => {
+        const gap = i === 0 ? '—' : `+${formatTime(r.finishTime - leader.finishTime)}`;
+        const rank = String(i+1).padEnd(6);
+        const bib  = `#${r.bib}`.padEnd(6);
+        const name = r.name.slice(0,20).padEnd(21);
+        const time = formatTime(r.finishTime).padEnd(13);
+        return `${rank}${bib}${name}${time}${gap}`;
+      });
+      return `StopWatch Results\n${header}\n${rows.join('\n')}`;
+    }
+
+    function buildCsvContent() {
+      const finished = state.runners
+        .filter(r => r.status === 'finished')
+        .sort((a, b) => a.finishTime - b.finishTime);
+      const leader = finished[0];
+      const rows = [['Rank','Bib','Name','Time (ms)','Time','Gap']];
+      finished.forEach((r, i) => {
+        const gap = i === 0 ? '' : `+${formatTime(r.finishTime - leader.finishTime)}`;
+        rows.push([i+1, r.bib, r.name, r.finishTime, formatTime(r.finishTime), gap]);
+      });
+      return rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    }
+
+    /* ── Event Wiring ─────────────────────────────────────── */
+    // Timer controls
+    document.getElementById('btn-start-stop').addEventListener('click', () => {
+      if (state.timer.running) dispatch('STOP_TIMER');
+      else dispatch('START_TIMER');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (state.timer.running) return; // must stop first
+      if (state.timer.elapsed > 0 || state.runners.some(r => r.finishTime)) {
+        if (!confirm('Reset timer? This will clear all finish times.')) return;
+      }
+      dispatch('RESET_TIMER');
+      showToast('Timer reset', 'info');
+    });
+
+    // Add runner form
+    document.getElementById('add-runner-toggle').addEventListener('click', function() {
+      const wrap = document.getElementById('add-runner-form-wrap');
+      const open = !wrap.classList.contains('open');
+      wrap.classList.toggle('open', open);
+      this.classList.toggle('open', open);
+      this.setAttribute('aria-expanded', String(open));
+      if (open) setTimeout(() => document.getElementById('runner-name-input').focus(), 320);
+    });
+
+    document.getElementById('add-runner-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = document.getElementById('runner-name-input');
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      dispatch('ADD_RUNNER', { name });
+      input.value = '';
+      input.focus();
+    });
+
+    // Runner list (event delegation)
+    document.getElementById('runner-list').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const { action, id } = btn.dataset;
+
+      if (action === 'finish') {
+        if (!state.timer.running) {
+          showToast('Start the timer first', 'warning');
+          return;
+        }
+        dispatch('FINISH_RUNNER', { id });
+      }
+      else if (action === 'undo')     dispatch('UNDO_FINISH', { id });
+      else if (action === 'dnf')      dispatch('DNF_RUNNER', { id });
+      else if (action === 'undo-dnf') {
+        const r = state.runners.find(x => x.id === id);
+        if (r) { r.status = state.timer.running ? 'running' : 'pending'; persist(); render(); }
+      }
+      else if (action === 'remove') {
+        const r = state.runners.find(x => x.id === id);
+        if (r && !confirm(`Remove ${r.name}?`)) return;
+        dispatch('REMOVE_RUNNER', { id });
+      }
+    });
+
+    // Results toggle
+    document.getElementById('results-toggle').addEventListener('click', function() {
+      const wrap = document.getElementById('results-wrap');
+      const open = !wrap.classList.contains('open');
+      wrap.classList.toggle('open', open);
+      this.classList.toggle('open', open);
+      this.setAttribute('aria-expanded', String(open));
+    });
+
+    // Export
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(buildResultsText());
+        showToast('Results copied!', 'success');
+      } catch {
+        showToast('Copy failed — try again', 'error');
+      }
+    });
+
+    document.getElementById('btn-csv').addEventListener('click', () => {
+      const blob = new Blob([buildCsvContent()], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `stopwatch-results-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded', 'success');
+    });
+
+    document.getElementById('btn-share').addEventListener('click', async () => {
+      try {
+        await navigator.share({ title: 'StopWatch Results', text: buildResultsText() });
+      } catch {}
+    });
+
+    // Settings
+    const settingsOverlay = document.getElementById('settings-overlay');
+    const settingsDrawer  = document.getElementById('settings-drawer');
+
+    function openSettings() {
+      settingsOverlay.classList.add('open');
+      settingsDrawer.classList.add('open');
+      document.getElementById('btn-close-settings').focus();
+    }
+    function closeSettings() {
+      settingsOverlay.classList.remove('open');
+      settingsDrawer.classList.remove('open');
+      document.getElementById('btn-settings').focus();
+    }
+
+    document.getElementById('btn-settings').addEventListener('click', openSettings);
+    document.getElementById('btn-close-settings').addEventListener('click', closeSettings);
+    settingsOverlay.addEventListener('click', closeSettings);
+
+    document.getElementById('toggle-light-mode').addEventListener('change', () => {
+      dispatch('TOGGLE_DARK_MODE');
+    });
+    document.getElementById('toggle-sound').addEventListener('change', () => {
+      dispatch('TOGGLE_SOUND');
+    });
+
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+      closeSettings();
+    });
+
+    document.getElementById('btn-reset-session').addEventListener('click', () => {
+      if (!confirm('Clear all runners and reset? This cannot be undone.')) return;
+      dispatch('RESET_SESSION');
+      closeSettings();
+      showToast('Session cleared', 'info');
+    });
+
+    // Keyboard: Escape closes settings
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeSettings();
+    });
+
+    /* ── Boot ─────────────────────────────────────────────── */
+    render();
+
+    // Restore RAF if timer was somehow still marked running (safety net)
+    if (state.timer.running) startRaf();
+
+    // Show recovery toast if state was restored from a paused mid-run session
+    if (state._recovered) {
+      delete state._recovered;
+      showToast('Session recovered — timer was paused', 'warning', 3500);
+    }
+
+    // Auto-open results if there are finished runners already
+    if (state.runners.some(r => r.status === 'finished')) {
+      const wrap   = document.getElementById('results-wrap');
+      const toggle = document.getElementById('results-toggle');
+      wrap.classList.add('open');
+      toggle.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+
+    // Auto-open add runner panel if no runners
+    if (state.runners.length === 0) {
+      const wrap   = document.getElementById('add-runner-form-wrap');
+      const toggle = document.getElementById('add-runner-toggle');
+      wrap.classList.add('open');
+      toggle.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+    }
+  </script>
+</body>
+</html>
