@@ -1510,6 +1510,25 @@
       if (e.key === 'Escape') closeSettings();
     });
 
+    /* ── Wake Lock ────────────────────────────────────────── */
+    let wakeLock = null;
+
+    async function acquireWakeLock() {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch {
+        // Permission denied or not supported — silently ignore
+      }
+    }
+
+    // Re-acquire after screen wakes back up (Android releases it on screen-off)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') acquireWakeLock();
+    });
+
+    acquireWakeLock();
+
     /* ── Boot ─────────────────────────────────────────────── */
     render();
 
