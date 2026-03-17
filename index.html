@@ -1093,6 +1093,16 @@
           r.status = 'finished';
           playBeep(880, 0.15);
           playBeep(1100, 0.08);
+          // Auto-stop timer when all runners are done (finished or DNF)
+          if (state.timer.running) {
+            const allDone = state.runners.every(x => x.status === 'finished' || x.status === 'dnf');
+            if (allDone && state.runners.length > 0) {
+              state.timer.elapsed += performance.now() - state.timer.startTime;
+              state.timer.startTime = null;
+              state.timer.running = false;
+              stopRaf();
+            }
+          }
           break;
         }
 
